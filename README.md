@@ -21,7 +21,7 @@
 
 ## 构建
 
-需要 macOS 13 或更新版本和 Swift 6 工具链。运行 `./script/build_and_run.sh` 构建并打开应用，或使用 Codex 的 Run 操作。运行 `./script/swiftpm.sh test` 测试。
+需要 macOS 13 或更新版本和 Swift 6 工具链。运行 `bash ./script/build_and_run.sh` 构建并打开应用，或使用 Codex 的 Run 操作。运行 `bash ./script/swiftpm.sh test` 测试。
 
 ## 许可证
 
