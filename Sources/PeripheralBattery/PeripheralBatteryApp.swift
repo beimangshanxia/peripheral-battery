@@ -2,6 +2,7 @@ import AppKit
 import BatteryCore
 import CoreBluetooth
 import OSLog
+import ServiceManagement
 import UserNotifications
 
 @main
@@ -25,6 +26,7 @@ private final class BatteryMenu: NSObject, NSApplicationDelegate, NSMenuDelegate
     private let menu = NSMenu()
     private let center = UNUserNotificationCenter.current()
     private let bluetooth = BLEBattery()
+    private let loginItem = SMAppService.mainApp
 
     private var threshold = 20
     private var notificationStatus: UNAuthorizationStatus?
@@ -174,6 +176,19 @@ private final class BatteryMenu: NSObject, NSApplicationDelegate, NSMenuDelegate
             menu.addItem(action("打开通知设置…", #selector(openNotificationSettings)))
         }
         menu.addItem(action("发送测试通知", #selector(testNotification)))
+
+        menu.addItem(.separator())
+        let status = loginItem.status
+        let startup = action("开机自启动", #selector(toggleLaunchAtLogin))
+        switch status {
+        case .enabled: startup.state = .on
+        case .requiresApproval: startup.state = .mixed
+        default: startup.state = .off
+        }
+        menu.addItem(startup)
+        if status == .requiresApproval {
+            menu.addItem(action("在系统设置中允许自启动…", #selector(openLoginItemSettings)))
+        }
         menu.addItem(.separator())
         menu.addItem(action("退出外设电量", #selector(quit), key: "q"))
     }
@@ -191,6 +206,30 @@ private final class BatteryMenu: NSObject, NSApplicationDelegate, NSMenuDelegate
     }
 
     @objc private func quit() { NSApp.terminate(nil) }
+
+    @objc private func toggleLaunchAtLogin() {
+        do {
+            switch loginItem.status {
+            case .enabled, .requiresApproval:
+                try loginItem.unregister()
+            default:
+                try loginItem.register()
+                if loginItem.status == .requiresApproval { openLoginItemSettings() }
+            }
+        } catch {
+            Self.logger.error("Login item update failed: \(error.localizedDescription, privacy: .public)")
+            let alert = NSAlert()
+            alert.messageText = "无法更改开机自启动设置"
+            alert.informativeText = error.localizedDescription
+            alert.addButton(withTitle: "好")
+            NSApp.activate(ignoringOtherApps: true)
+            alert.runModal()
+        }
+    }
+
+    @objc private func openLoginItemSettings() {
+        SMAppService.openSystemSettingsLoginItems()
+    }
 
     @objc private func setThreshold(_ item: NSMenuItem) {
         guard Self.thresholds.contains(item.tag), item.tag != threshold else { return }

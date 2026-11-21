@@ -19,11 +19,12 @@ stamp=".build/$app_name.bundle-checksums"
 
 bash ./script/swiftpm.sh build
 build_binary="$(bash ./script/swiftpm.sh build --show-bin-path)/$app_name"
-checksums="$(/usr/bin/shasum -a 256 "$build_binary" script/Info.plist)"
-mkdir -p "$app_bundle/Contents/MacOS"
+checksums="$(/usr/bin/shasum -a 256 "$build_binary" script/Info.plist assets/AppIcon.icns)"
+mkdir -p "$app_bundle/Contents/MacOS" "$app_bundle/Contents/Resources"
 if [[ ! -f "$stamp" || "$(<"$stamp")" != "$checksums" ]] ||
    ! /usr/bin/codesign --verify "$app_bundle" 2>/dev/null; then
   cp script/Info.plist "$app_bundle/Contents/Info.plist"
+  cp assets/AppIcon.icns "$app_bundle/Contents/Resources/AppIcon.icns"
   install -m 755 "$build_binary" "$app_binary"
   /usr/bin/codesign --force --sign - "$app_bundle"
   printf '%s\n' "$checksums" > "$stamp"
